@@ -1,0 +1,1744 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>월별 업무일지</title>
+  <style>
+    :root {
+      --navy: #17324d;
+      --blue: #2f6b9a;
+      --blue-2: #eaf3f8;
+      --ink: #263746;
+      --muted: #6d7d89;
+      --line: #d9e3ea;
+      --paper: #ffffff;
+      --bg: #f3f6f8;
+      --weekend: #fff5f1;
+      --green: #2e7d5b;
+      --green-bg: #e3f3ea;
+      --amber: #aa6810;
+      --amber-bg: #fff0d8;
+      --red: #b84a4a;
+      --red-bg: #f8dede;
+      --shadow: 0 12px 36px rgba(28, 52, 72, .09);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    .app-shell {
+      width: min(1740px, calc(100% - 32px));
+      margin: 24px auto 48px;
+    }
+
+    .hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 26px 30px;
+      color: #fff;
+      background: linear-gradient(120deg, #17324d 0%, #245a84 100%);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      color: #bbd7ea;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .12em;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 3vw, 36px);
+      letter-spacing: -.04em;
+    }
+
+    .hero-copy {
+      margin: 10px 0 0;
+      color: #dbeaf4;
+      font-size: 14px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 9px;
+    }
+
+    .btn {
+      min-height: 40px;
+      padding: 0 15px;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0, 0, 0, .12); }
+    .btn.secondary { color: #fff; background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .28); }
+    .file-label { display: inline-flex; align-items: center; }
+    .file-label input { display: none; }
+
+    .month-navigation {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 18px 0;
+    }
+
+    .year-navigation {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 18px 0 0;
+    }
+
+    .year-label {
+      min-width: 96px;
+      padding: 10px 14px;
+      color: var(--navy);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      font-size: 18px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .year-navigation .btn.secondary {
+      color: var(--navy);
+      background: #fff;
+      border-color: #b8c8d4;
+      box-shadow: 0 5px 14px rgba(28, 52, 72, .08);
+    }
+
+    .year-navigation .btn.secondary:hover {
+      color: #fff;
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .today-button {
+      flex: 0 0 auto;
+      color: #fff;
+      background: var(--navy);
+    }
+
+    .month-tabs {
+      display: flex;
+      gap: 8px;
+      margin: 0;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .month-tab {
+      flex: 0 0 auto;
+      min-width: 80px;
+      padding: 12px 16px;
+      color: var(--muted);
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .month-tab.active {
+      color: #fff;
+      background: var(--blue);
+      border-color: var(--blue);
+      box-shadow: 0 7px 18px rgba(47, 107, 154, .22);
+    }
+
+    .planner {
+      display: none;
+      margin-bottom: 16px;
+    }
+
+    .work-calendar-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 520px;
+      gap: 14px;
+      align-items: start;
+      margin-bottom: 16px;
+    }
+
+    .work-panel { min-width: 0; }
+
+    .calendar-side {
+      position: sticky;
+      top: 14px;
+      align-self: start;
+    }
+
+    .todo-panel, .calendar-panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 5px 16px rgba(28, 52, 72, .04);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 15px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-title {
+      margin: 0;
+      color: var(--navy);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .panel-note {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .todo-form {
+      display: flex;
+      gap: 8px;
+      padding: 14px 16px 10px;
+    }
+
+    .todo-input { flex: 1; min-width: 0; }
+
+    .todo-list {
+      display: grid;
+      gap: 8px;
+      min-height: 96px;
+      max-height: 360px;
+      overflow: auto;
+      padding: 0 16px 16px;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 11px;
+      color: var(--ink);
+      background: #f7fafc;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      cursor: grab;
+    }
+
+    .todo-item:active { cursor: grabbing; }
+    .todo-text { font-weight: 800; line-height: 1.35; }
+    .todo-remove {
+      flex: 0 0 auto;
+      width: 26px;
+      height: 26px;
+      color: var(--muted);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(210px, 1fr));
+      gap: 12px;
+      padding: 14px 16px 16px;
+      max-height: calc(100vh - 170px);
+      overflow: auto;
+    }
+
+    .calendar-month {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .calendar-title {
+      padding: 9px 10px;
+      color: #fff;
+      background: var(--blue);
+      font-weight: 900;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .calendar-title:hover { background: var(--navy); }
+
+    .calendar-weekdays, .calendar-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+
+    .calendar-weekdays span {
+      padding: 7px 0;
+      color: var(--muted);
+      background: #f7fafc;
+      font-size: 11px;
+      font-weight: 900;
+      text-align: center;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .calendar-day {
+      min-height: 54px;
+      padding: 5px;
+      background: #fff;
+      border-right: 1px solid #edf2f6;
+      border-bottom: 1px solid #edf2f6;
+      cursor: pointer;
+    }
+
+    .calendar-day:nth-child(7n) { border-right: 0; }
+    .calendar-day.blank { background: #f7fafc; cursor: default; }
+    .calendar-day.weekend { background: var(--weekend); }
+    .calendar-day.drag-over { outline: 3px solid rgba(47, 107, 154, .35); outline-offset: -3px; }
+    .calendar-day.today {
+      box-shadow: inset 0 0 0 3px rgba(184, 74, 74, .45);
+    }
+
+    .day-number {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .task-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      color: #fff;
+      background: var(--green);
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .day-tasks {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.35;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .stat {
+      padding: 18px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 5px 16px rgba(28, 52, 72, .04);
+    }
+
+    .stat-label { display: block; margin-bottom: 7px; color: var(--muted); font-size: 13px; font-weight: 700; }
+    .stat-value { color: var(--navy); font-size: 25px; font-weight: 900; letter-spacing: -.04em; }
+    .stat-value small { margin-left: 3px; color: var(--muted); font-size: 13px; font-weight: 700; }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px 14px 0 0;
+    }
+
+    .toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+
+    .field {
+      min-height: 39px;
+      padding: 0 12px;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid #cdd9e1;
+      border-radius: 9px;
+      outline: none;
+    }
+
+    .field:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47, 107, 154, .13); }
+    .search { width: min(300px, 55vw); }
+    .save-state { color: var(--green); font-size: 13px; font-weight: 800; }
+
+    .table-wrap {
+      max-height: calc(100vh - 330px);
+      min-height: 470px;
+      overflow: auto;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-top: 0;
+      border-radius: 0 0 14px 14px;
+      box-shadow: var(--shadow);
+    }
+
+    table {
+      width: 100%;
+      min-width: 1540px;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      padding: 13px 9px;
+      color: #fff;
+      background: var(--blue);
+      border-right: 1px solid rgba(255, 255, 255, .24);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    td {
+      padding: 0;
+      background: #fff;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    tr.weekend td { background: var(--weekend); }
+    tr.hidden { display: none; }
+
+    .date-cell {
+      padding: 13px 8px;
+      color: var(--navy);
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .sunday .date-cell { color: var(--red); }
+    .saturday .date-cell { color: var(--blue); }
+
+    td textarea, td input, td select {
+      width: 100%;
+      min-height: 72px;
+      margin: 0;
+      padding: 10px;
+      color: var(--ink);
+      background: transparent;
+      border: 0;
+      outline: 0;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    td input, td select {
+      min-height: 72px;
+      text-align: center;
+    }
+
+    td textarea:focus, td input:focus, td select:focus {
+      background: #f6fbff;
+      box-shadow: inset 0 0 0 2px rgba(47, 107, 154, .45);
+    }
+
+    .task-cell textarea {
+      min-height: 48px;
+      border-bottom: 1px dashed var(--line);
+    }
+
+    .task-checklist {
+      display: grid;
+      gap: 5px;
+      padding: 8px;
+    }
+
+    .task-checklist:empty { display: none; }
+
+    .task-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      width: 100%;
+      padding: 7px 8px;
+      color: var(--ink);
+      background: #f7fafc;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .task-check[draggable="true"] { cursor: grab; }
+    .task-check[draggable="true"]:active { cursor: grabbing; }
+
+    .task-check.touch-dragging,
+    .todo-item.touch-dragging {
+      opacity: .45;
+    }
+
+    .touch-drag-ghost {
+      position: fixed;
+      z-index: 60;
+      max-width: 260px;
+      padding: 10px 12px;
+      color: #fff;
+      background: var(--navy);
+      border-radius: 10px;
+      box-shadow: 0 16px 34px rgba(0, 0, 0, .22);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      font-weight: 900;
+      line-height: 1.35;
+    }
+
+    .task-check::before {
+      content: "";
+      flex: 0 0 17px;
+      width: 17px;
+      height: 17px;
+      margin-top: 1px;
+      background: #fff;
+      border: 2px solid #9eb1bf;
+      border-radius: 5px;
+    }
+
+    .task-check.checked {
+      color: #fff;
+      background: #C70202;
+      text-decoration: line-through;
+    }
+
+    .task-check.checked::before {
+      content: "✓";
+      display: grid;
+      place-items: center;
+      color: #C70202;
+      background: #fff;
+      border-color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+    select.status-complete { color: var(--green); background: var(--green-bg); font-weight: 900; }
+    select.status-progress { color: var(--amber); background: var(--amber-bg); font-weight: 900; }
+    select.status-hold { color: var(--red); background: var(--red-bg); font-weight: 900; }
+    select.priority-high { color: var(--red); background: var(--red-bg); font-weight: 900; }
+
+    .empty-state {
+      display: none;
+      padding: 50px;
+      color: var(--muted);
+      background: var(--paper);
+      text-align: center;
+    }
+
+    .empty-state.show { display: block; }
+
+    .notice {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 20;
+      padding: 12px 17px;
+      color: #fff;
+      background: var(--navy);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: .2s ease;
+    }
+
+    .notice.show { opacity: 1; transform: translateY(0); }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(10, 24, 38, .56);
+    }
+
+    .modal-backdrop.show { display: flex; }
+
+    .month-modal {
+      width: min(980px, 100%);
+      max-height: min(860px, calc(100vh - 48px));
+      overflow: auto;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+    }
+
+    .modal-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px;
+      color: #fff;
+      background: var(--navy);
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .modal-close {
+      width: 38px;
+      height: 38px;
+      color: #fff;
+      background: rgba(255, 255, 255, .13);
+      border: 1px solid rgba(255, 255, 255, .25);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .modal-calendar {
+      padding: 18px;
+    }
+
+    .modal-calendar .calendar-weekdays span {
+      padding: 12px 0;
+      font-size: 13px;
+    }
+
+    .modal-calendar .calendar-day {
+      min-height: 116px;
+      padding: 9px;
+    }
+
+    .modal-calendar .day-number {
+      font-size: 15px;
+    }
+
+    .modal-calendar .day-tasks {
+      font-size: 12px;
+    }
+
+    .settings-modal {
+      width: min(620px, 100%);
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+      overflow: hidden;
+    }
+
+    .settings-body {
+      display: grid;
+      gap: 14px;
+      padding: 20px;
+    }
+
+    .settings-label {
+      display: grid;
+      gap: 7px;
+      color: var(--navy);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .settings-label input {
+      width: 100%;
+      min-height: 42px;
+      padding: 0 12px;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid #cdd9e1;
+      border-radius: 10px;
+      outline: none;
+      font: inherit;
+    }
+
+    .settings-help {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .settings-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 0 20px 20px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 980px) {
+      .app-shell { width: min(100% - 20px, 1740px); margin-top: 10px; }
+      .hero { align-items: flex-start; flex-direction: column; padding: 22px; }
+      .hero-actions { justify-content: flex-start; }
+      .work-calendar-layout { grid-template-columns: 1fr; }
+      .calendar-side { position: static; }
+      .calendar-grid { grid-template-columns: repeat(2, minmax(210px, 1fr)); max-height: 620px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .toolbar { align-items: stretch; flex-direction: column; }
+      .table-wrap { max-height: none; }
+      .year-navigation { align-items: stretch; flex-wrap: wrap; }
+      .month-navigation { align-items: stretch; flex-direction: column; }
+    }
+
+    @media (max-width: 520px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+      .calendar-grid { grid-template-columns: 1fr; }
+      .todo-form { flex-direction: column; }
+      .stat { padding: 14px; }
+      .stat-value { font-size: 21px; }
+      .hero-actions .btn { flex: 1 1 auto; }
+      .search { width: 100%; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .app-shell { width: 100%; margin: 0; }
+      .hero { color: #000; background: #fff; box-shadow: none; border: 1px solid #bbb; }
+      .eyebrow, .hero-copy { color: #333; }
+      .hero-actions, .month-tabs, .toolbar { display: none; }
+      .planner { display: none; }
+      .stats { grid-template-columns: repeat(5, 1fr); }
+      .stat { box-shadow: none; }
+      .table-wrap { max-height: none; overflow: visible; box-shadow: none; border-top: 1px solid var(--line); }
+      table { min-width: 100%; font-size: 8px; }
+      th { position: static; color: #000; background: #ddd; }
+      td textarea, td input, td select { min-height: 48px; font-size: 8px; appearance: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">DAILY WORK LOG</p>
+        <h1>월별 일일 업무일지</h1>
+        <p class="hero-copy">전체 달력에서 할일을 날짜별로 배치하고, 업무 목표와 결과를 기록하세요.</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn" id="exportCsv">CSV 내보내기</button>
+        <button class="btn secondary" id="backupJson">백업 저장</button>
+        <label class="btn secondary file-label">백업 불러오기<input type="file" id="restoreJson" accept=".json,application/json"></label>
+        <button class="btn secondary" id="printPage">인쇄</button>
+      </div>
+    </header>
+
+    <div class="year-navigation">
+      <button class="btn secondary" id="prevYearButton" type="button">이전 연도</button>
+      <span class="year-label" id="yearLabel">연도</span>
+      <button class="btn secondary" id="nextYearButton" type="button">다음 연도</button>
+    </div>
+
+    <div class="month-navigation">
+      <nav class="month-tabs" id="monthTabs" aria-label="월 선택"></nav>
+    </div>
+
+    <section class="planner" aria-label="할일 달력 배치">
+      <aside class="todo-panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">할일 입력</h2>
+            <p class="panel-note">할일을 추가한 뒤 달력 날짜로 끌어다 놓으세요.</p>
+          </div>
+        </div>
+        <div class="todo-form">
+          <input class="field todo-input" id="todoInput" type="text" placeholder="예: 제안서 초안 작성">
+          <button class="btn" id="addTodo" type="button">추가</button>
+        </div>
+        <div class="todo-list" id="todoList" aria-label="미배정 할일"></div>
+      </aside>
+
+    </section>
+
+    <section class="stats" aria-label="월간 요약">
+      <article class="stat"><span class="stat-label">작성 일수</span><strong class="stat-value" id="writtenDays">0<small>일</small></strong></article>
+      <article class="stat"><span class="stat-label">완료 일수</span><strong class="stat-value" id="completeDays">0<small>일</small></strong></article>
+      <article class="stat"><span class="stat-label">작성률</span><strong class="stat-value" id="writeRate">0<small>%</small></strong></article>
+      <article class="stat"><span class="stat-label">총 근무시간</span><strong class="stat-value" id="totalHours">0<small>시간</small></strong></article>
+      <article class="stat"><span class="stat-label">완료율</span><strong class="stat-value" id="completeRate">0<small>%</small></strong></article>
+    </section>
+
+    <section class="work-calendar-layout">
+      <section class="work-panel">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <input class="field search" id="searchInput" type="search" placeholder="업무 내용 검색">
+          <select class="field" id="statusFilter" aria-label="상태 필터">
+            <option value="">모든 상태</option>
+            <option value="미작성">미작성</option>
+            <option value="진행중">진행중</option>
+            <option value="완료">완료</option>
+            <option value="보류">보류</option>
+          </select>
+          <select class="field" id="dayFilter" aria-label="요일 필터">
+            <option value="">전체 요일</option>
+            <option value="weekday">평일만</option>
+            <option value="weekend">주말만</option>
+          </select>
+        </div>
+        <div class="toolbar-right">
+          <span class="save-state" id="saveState">자동 저장됨</span>
+          <button class="btn today-button" id="todayButton" type="button">오늘</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <colgroup>
+            <col style="width:112px"><col style="width:54px"><col style="width:205px">
+            <col style="width:240px"><col style="width:240px"><col style="width:210px">
+            <col style="width:210px"><col style="width:94px"><col style="width:86px">
+            <col style="width:92px"><col style="width:76px"><col style="width:170px">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>날짜</th><th>요일</th><th>오늘의 핵심 목표</th><th>주요 업무</th>
+              <th>업무 결과</th><th>이슈 / 지원 필요</th><th>다음 업무</th><th>상태</th>
+              <th>근무시간</th><th>우선순위</th><th>만족도</th><th>메모</th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+        <div class="empty-state" id="emptyState">조건에 맞는 업무일지가 없습니다.</div>
+      </div>
+      </section>
+
+      <section class="calendar-panel calendar-side">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">달력</h2>
+            <p class="panel-note">주요 업무 체크 항목을 날짜 칸에 끌어다 놓으세요.</p>
+          </div>
+        </div>
+        <div class="calendar-grid" id="yearCalendar"></div>
+      </section>
+    </section>
+  </main>
+  <div class="notice" id="notice"></div>
+  <div class="modal-backdrop" id="monthModal" aria-hidden="true">
+    <section class="month-modal" role="dialog" aria-modal="true" aria-labelledby="monthModalTitle">
+      <div class="modal-head">
+        <h2 class="modal-title" id="monthModalTitle">달력</h2>
+        <button class="modal-close" id="closeMonthModal" type="button" aria-label="닫기">×</button>
+      </div>
+      <div class="modal-calendar" id="monthModalCalendar"></div>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const CURRENT_YEAR = new Date().getFullYear();
+      const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+      let selectedYear = CURRENT_YEAR;
+      let storageKey = storageKeyForYear(selectedYear);
+      let todoStorageKey = todoStorageKeyForYear(selectedYear);
+      const LEGACY_STORAGE_KEYS = ["daily-work-log-2026-jun-dec-v1"];
+      const fields = ["goal", "tasks", "result", "issue", "next", "status", "hours", "priority", "satisfaction", "memo"];
+      const textFields = new Set(["goal", "tasks", "result", "issue", "next", "memo"]);
+      const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+
+      const els = {
+        tabs: document.querySelector("#monthTabs"),
+        body: document.querySelector("#logBody"),
+        todoInput: document.querySelector("#todoInput"),
+        addTodo: document.querySelector("#addTodo"),
+        todoList: document.querySelector("#todoList"),
+        calendar: document.querySelector("#yearCalendar"),
+        search: document.querySelector("#searchInput"),
+        statusFilter: document.querySelector("#statusFilter"),
+        dayFilter: document.querySelector("#dayFilter"),
+        todayButton: document.querySelector("#todayButton"),
+        prevYearButton: document.querySelector("#prevYearButton"),
+        nextYearButton: document.querySelector("#nextYearButton"),
+        yearLabel: document.querySelector("#yearLabel"),
+        monthModal: document.querySelector("#monthModal"),
+        monthModalTitle: document.querySelector("#monthModalTitle"),
+        monthModalCalendar: document.querySelector("#monthModalCalendar"),
+        closeMonthModal: document.querySelector("#closeMonthModal"),
+        saveState: document.querySelector("#saveState"),
+        empty: document.querySelector("#emptyState"),
+        notice: document.querySelector("#notice"),
+        writtenDays: document.querySelector("#writtenDays"),
+        completeDays: document.querySelector("#completeDays"),
+        writeRate: document.querySelector("#writeRate"),
+        totalHours: document.querySelector("#totalHours"),
+        completeRate: document.querySelector("#completeRate")
+      };
+
+      let activeMonth = CURRENT_YEAR === selectedYear ? new Date().getMonth() + 1 : 1;
+      let data = loadData();
+      let todos = loadTodos();
+      let saveTimer;
+      let noticeTimer = null;
+
+      function storageKeyForYear(year) {
+        return `daily-work-log-${year}-v2`;
+      }
+
+      function todoStorageKeyForYear(year) {
+        return `daily-work-log-${year}-todo-inbox-v1`;
+      }
+
+      function createInitialData() {
+        const initial = {};
+        MONTHS.forEach(month => {
+          const days = new Date(selectedYear, month, 0).getDate();
+          for (let day = 1; day <= days; day++) {
+            const key = dateKey(month, day);
+            initial[key] = {
+              goal: "", tasks: [], result: "", issue: "", next: "",
+              status: "미작성", hours: "", priority: "보통", satisfaction: "", memo: ""
+            };
+          }
+        });
+        return initial;
+      }
+
+      function normalizeTask(task, fallbackCompleted = false) {
+        if (typeof task === "string") {
+          return { text: task.trim(), completed: Boolean(fallbackCompleted) };
+        }
+        if (task && typeof task === "object") {
+          return {
+            text: String(task.text || "").trim(),
+            completed: Boolean(task.completed)
+          };
+        }
+        return { text: "", completed: Boolean(fallbackCompleted) };
+      }
+
+      function normalizeTasks(rawTasks, rawChecks = []) {
+        if (Array.isArray(rawTasks)) {
+          return rawTasks.map(task => normalizeTask(task)).filter(task => task.text);
+        }
+        return String(rawTasks || "")
+          .split(/\r?\n/)
+          .map((text, index) => normalizeTask(text, rawChecks[index]))
+          .filter(task => task.text);
+      }
+
+      function migrateEntry(base, stored = {}) {
+        const migrated = { ...base, ...stored };
+        migrated.tasks = normalizeTasks(stored.tasks ?? base.tasks, stored.taskChecks || []);
+        delete migrated.taskChecks;
+        return migrated;
+      }
+
+      function loadTodos() {
+        try {
+          const stored = JSON.parse(localStorage.getItem(todoStorageKey) || "[]");
+          return Array.isArray(stored) ? stored : [];
+        } catch (_) {
+          return [];
+        }
+      }
+
+      function loadData() {
+        const initial = createInitialData();
+        try {
+          let stored = JSON.parse(localStorage.getItem(storageKey) || "{}");
+          if (!Object.keys(stored).length) {
+            for (const legacyKey of LEGACY_STORAGE_KEYS) {
+              const legacy = JSON.parse(localStorage.getItem(legacyKey) || "{}");
+              if (legacy && Object.keys(legacy).length) {
+                stored = legacy;
+                break;
+              }
+            }
+          }
+          Object.keys(initial).forEach(key => {
+            initial[key] = migrateEntry(initial[key], stored[key] || {});
+          });
+        } catch (_) {}
+        return initial;
+      }
+
+      function dateKey(month, day) {
+        return `${selectedYear}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      }
+
+      function initializeYearLabels() {
+        document.title = `${selectedYear} 월별 업무일지`;
+        if (els.yearLabel) els.yearLabel.textContent = `${selectedYear}`;
+        const eyebrow = document.querySelector(".eyebrow");
+        if (eyebrow) eyebrow.textContent = `DAILY WORK LOG · ${selectedYear}`;
+        const heroCopy = document.querySelector(".hero-copy");
+        if (heroCopy) heroCopy.textContent = `${selectedYear}년 전체 달력에서 할일을 날짜별로 배치하고, 업무 목표와 결과를 기록하세요.`;
+        document.querySelectorAll(".panel-title").forEach(title => {
+          if (title.textContent.includes("달력")) title.textContent = `${selectedYear}년 달력`;
+        });
+      }
+
+      function todayKey() {
+        const today = new Date();
+        if (today.getFullYear() !== selectedYear) return "";
+        return dateKey(today.getMonth() + 1, today.getDate());
+      }
+
+      function renderTabs() {
+        els.tabs.innerHTML = MONTHS.map(month =>
+          `<button class="month-tab ${month === activeMonth ? "active" : ""}" data-month="${month}">${month}월</button>`
+        ).join("");
+      }
+
+      function optionList(options, selected) {
+        return options.map(value => `<option value="${value}" ${value === selected ? "selected" : ""}>${value || "선택"}</option>`).join("");
+      }
+
+      function rowHtml(month, day) {
+        const key = dateKey(month, day);
+        const entry = data[key];
+        const date = new Date(selectedYear, month - 1, day);
+        const dayIndex = date.getDay();
+        const weekendClass = dayIndex === 0 ? "weekend sunday" : dayIndex === 6 ? "weekend saturday" : "";
+        return `
+          <tr class="${weekendClass}" data-key="${key}" data-day-type="${dayIndex === 0 || dayIndex === 6 ? "weekend" : "weekday"}">
+            <td class="date-cell">${key}</td>
+            <td class="date-cell">${weekdays[dayIndex]}</td>
+            <td><textarea data-field="goal" aria-label="${key} goal">${escapeHtml(entry.goal)}</textarea></td>
+            <td class="task-cell">
+              <textarea data-field="tasks" aria-label="${key} tasks" placeholder="업무를 줄바꿈으로 입력하세요">${escapeHtml(tasksToText(entry))}</textarea>
+              <div class="task-checklist">${taskChecklistHtml(entry)}</div>
+            </td>
+            ${["result", "issue", "next"].map(field =>
+              `<td><textarea data-field="${field}" aria-label="${key} ${field}">${escapeHtml(entry[field])}</textarea></td>`
+            ).join("")}
+            <td><select data-field="status">${optionList(["미작성", "진행중", "완료", "보류"], entry.status)}</select></td>
+            <td><input data-field="hours" type="number" min="0" max="24" step="0.5" value="${escapeHtml(entry.hours)}" aria-label="${key} 근무시간"></td>
+            <td><select data-field="priority">${optionList(["높음", "보통", "낮음"], entry.priority)}</select></td>
+            <td><select data-field="satisfaction">${optionList(["", "1", "2", "3", "4", "5"], String(entry.satisfaction))}</select></td>
+            <td><textarea data-field="memo" aria-label="${key} 메모">${escapeHtml(entry.memo)}</textarea></td>
+          </tr>`;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function taskItems(entry) {
+        entry.tasks = normalizeTasks(entry.tasks);
+        return entry.tasks;
+      }
+
+      function taskTexts(entry) {
+        return taskItems(entry).map(task => task.text);
+      }
+
+      function tasksToText(entry) {
+        return taskTexts(entry).join("\n");
+      }
+
+      function mergeTasksFromText(text, entry) {
+        const previous = taskItems(entry);
+        return String(text || "")
+          .split(/\r?\n/)
+          .map(item => item.trim())
+          .filter(Boolean)
+          .map((item, index) => {
+            const matched = previous.find(task => task.text === item) || previous[index];
+            return { text: item, completed: Boolean(matched?.completed) };
+          });
+      }
+
+      function taskChecklistHtml(entry) {
+        return taskItems(entry).map((task, index) => `
+          <button type="button" class="task-check ${task.completed ? "checked" : ""}"
+            data-task-index="${index}" draggable="true" aria-pressed="${task.completed ? "true" : "false"}">
+            <span>${escapeHtml(task.text)}</span>
+          </button>
+        `).join("");
+      }
+
+      function refreshTaskChecklist(row, entry) {
+        row.querySelector(".task-checklist").innerHTML = taskChecklistHtml(entry);
+      }
+
+      function renderMonth() {
+        const days = new Date(selectedYear, activeMonth, 0).getDate();
+        els.body.innerHTML = Array.from({ length: days }, (_, i) => rowHtml(activeMonth, i + 1)).join("");
+        applySelectStyles();
+        applyFilters();
+        updateStats();
+      }
+
+      function save() {
+        clearTimeout(saveTimer);
+        els.saveState.textContent = "저장 중...";
+        saveTimer = setTimeout(() => {
+          localStorage.setItem(storageKey, JSON.stringify(data));
+          localStorage.setItem(todoStorageKey, JSON.stringify(todos));
+          els.saveState.textContent = "자동 저장됨";
+        }, 220);
+      }
+
+      function renderTodos() {
+        if (!todos.length) {
+          els.todoList.innerHTML = `<div class="panel-note">아직 미배정 할일이 없습니다.</div>`;
+          return;
+        }
+        els.todoList.innerHTML = todos.map(todo => `
+          <div class="todo-item" draggable="true" data-todo-id="${todo.id}">
+            <span class="todo-text">${escapeHtml(todo.text)}</span>
+            <button class="todo-remove" type="button" data-remove-todo="${todo.id}" aria-label="할일 삭제">×</button>
+          </div>
+        `).join("");
+      }
+
+      function addTodo() {
+        const text = els.todoInput.value.trim();
+        if (!text) return;
+        todos.push({ id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, text });
+        els.todoInput.value = "";
+        renderTodos();
+        save();
+      }
+
+      function removeTodo(id) {
+        todos = todos.filter(todo => todo.id !== id);
+        renderTodos();
+        save();
+      }
+
+      function renderCalendar() {
+        els.calendar.innerHTML = MONTHS.map(month => monthCalendarHtml(month)).join("");
+      }
+
+      function monthCalendarHtml(month) {
+        const days = new Date(selectedYear, month, 0).getDate();
+        const firstDay = new Date(selectedYear, month - 1, 1).getDay();
+        const blanks = Array.from({ length: firstDay }, () => `<div class="calendar-day blank"></div>`).join("");
+        const dayCells = Array.from({ length: days }, (_, index) => calendarDayHtml(month, index + 1)).join("");
+        return `
+          <article class="calendar-month">
+            <div class="calendar-title" data-calendar-month="${month}">${month}월</div>
+            <div class="calendar-weekdays">${weekdays.map(day => `<span>${day}</span>`).join("")}</div>
+            <div class="calendar-days">${blanks}${dayCells}</div>
+          </article>
+        `;
+      }
+
+      function renderMonthModal(month) {
+        els.monthModalTitle.textContent = `${selectedYear}년 ${month}월`;
+        const days = new Date(selectedYear, month, 0).getDate();
+        const firstDay = new Date(selectedYear, month - 1, 1).getDay();
+        const blanks = Array.from({ length: firstDay }, () => `<div class="calendar-day blank"></div>`).join("");
+        const dayCells = Array.from({ length: days }, (_, index) => calendarDayHtml(month, index + 1)).join("");
+        els.monthModalCalendar.innerHTML = `
+          <div class="calendar-weekdays">${weekdays.map(day => `<span>${day}</span>`).join("")}</div>
+          <div class="calendar-days">${blanks}${dayCells}</div>
+        `;
+      }
+
+      function openMonthModal(month) {
+        renderMonthModal(month);
+        els.monthModal.classList.add("show");
+        els.monthModal.setAttribute("aria-hidden", "false");
+      }
+
+      function closeMonthModal() {
+        els.monthModal.classList.remove("show");
+        els.monthModal.setAttribute("aria-hidden", "true");
+      }
+
+      function closeAllModals() {
+        closeMonthModal();
+      }
+
+      function refreshOpenMonthModal() {
+        if (!els.monthModal.classList.contains("show")) return;
+        const match = els.monthModalTitle.textContent.match(/(\d+)월/);
+        if (match) renderMonthModal(Number(match[1]));
+      }
+
+      function replaceCalendarDay(container, key) {
+        if (!container) return;
+        const existing = container.querySelector(`[data-date="${key}"]`);
+        if (!existing) return;
+        const month = Number(key.slice(5, 7));
+        const day = Number(key.slice(8, 10));
+        const wrapper = document.createElement("template");
+        wrapper.innerHTML = calendarDayHtml(month, day).trim();
+        existing.replaceWith(wrapper.content.firstElementChild);
+      }
+
+      function updateCalendarDay(key) {
+        replaceCalendarDay(els.calendar, key);
+        replaceCalendarDay(els.monthModalCalendar, key);
+      }
+
+      function updateRowTaskUi(row, entry) {
+        if (!row) return;
+        const textarea = row.querySelector('[data-field="tasks"]');
+        if (textarea && document.activeElement !== textarea) textarea.value = tasksToText(entry);
+        refreshTaskChecklist(row, entry);
+        const statusSelect = row.querySelector('[data-field="status"]');
+        if (statusSelect) {
+          statusSelect.value = entry.status;
+          applySelectStyle(statusSelect);
+        }
+      }
+
+      function updateRowByKey(key) {
+        const row = els.body.querySelector(`[data-key="${key}"]`);
+        if (row) updateRowTaskUi(row, data[key]);
+      }
+
+      function calendarDayHtml(month, day) {
+        const key = dateKey(month, day);
+        const date = new Date(selectedYear, month - 1, day);
+        const entry = data[key];
+        const items = taskItems(entry);
+        const preview = items.slice(0, 2).map(task => `<div>${escapeHtml(task.text)}</div>`).join("");
+        const weekend = date.getDay() === 0 || date.getDay() === 6 ? "weekend" : "";
+        const todayClass = key === todayKey() ? "today" : "";
+        return `
+          <div class="calendar-day ${weekend} ${todayClass}" data-date="${key}" title="${key}">
+            <div class="day-number"><span>${day}</span>${items.length ? `<span class="task-badge">${items.length}</span>` : ""}</div>
+            <div class="day-tasks">${preview}</div>
+          </div>
+        `;
+      }
+
+      function assignTodoToDate(todoId, key) {
+        const todo = todos.find(item => item.id === todoId);
+        if (!todo || !data[key]) return;
+        const entry = data[key];
+        const currentItems = taskItems(entry);
+        if (!currentItems.some(task => task.text === todo.text)) {
+          entry.tasks.push({ text: todo.text, completed: false });
+        }
+        if (entry.status === "미작성") entry.status = "진행중";
+        todos = todos.filter(item => item.id !== todoId);
+        renderTodos();
+        updateRowByKey(key);
+        updateCalendarDay(key);
+        updateStats();
+        save();
+        showNotice(`${key}에 할일을 추가했습니다.`);
+      }
+
+      function addTaskToDate(text, key) {
+        if (!text || !data[key]) return false;
+        const entry = data[key];
+        const currentItems = taskItems(entry);
+        if (currentItems.some(task => task.text === text)) return false;
+        entry.tasks.push({ text, completed: false });
+        if (entry.status === "미작성") entry.status = "진행중";
+        return true;
+      }
+
+      function removeTaskFromDate(sourceKey, taskIndex) {
+        if (!data[sourceKey]) return;
+        const entry = data[sourceKey];
+        const items = taskItems(entry);
+        items.splice(taskIndex, 1);
+        entry.tasks = items;
+        if (!items.length && entry.status !== "완료") entry.status = "미작성";
+      }
+
+      function assignDraggedTaskToDate(payload, targetKey) {
+        if (!payload?.text || !targetKey) return;
+        const moved = addTaskToDate(payload.text, targetKey);
+        if (moved && payload.sourceKey && payload.sourceKey !== targetKey) {
+          removeTaskFromDate(payload.sourceKey, payload.taskIndex);
+        }
+        updateRowByKey(targetKey);
+        if (payload.sourceKey) updateRowByKey(payload.sourceKey);
+        updateCalendarDay(targetKey);
+        if (payload.sourceKey) updateCalendarDay(payload.sourceKey);
+        updateStats();
+        save();
+        showNotice(`${targetKey}에 업무를 이동했습니다.`);
+      }
+
+      function handleDropPayload(payload, targetKey) {
+        if (!payload || !targetKey) return;
+        if (payload.type === "task") {
+          assignDraggedTaskToDate(payload, targetKey);
+          return;
+        }
+        if (payload.type === "todo") {
+          assignTodoToDate(payload.id, targetKey);
+        }
+      }
+
+      function parseDropPayload(dataTransfer) {
+        const rawPayload = dataTransfer.getData("application/json");
+        if (rawPayload) {
+          try {
+            return JSON.parse(rawPayload);
+          } catch (_) {}
+        }
+        const fallback = dataTransfer.getData("text/plain");
+        return fallback ? { type: "todo", id: fallback } : null;
+      }
+
+      const touchDrag = {
+        active: false,
+        payload: null,
+        source: null,
+        ghost: null,
+        overDay: null,
+        startX: 0,
+        startY: 0,
+        moved: false,
+        suppressClick: false
+      };
+
+      function getTaskPayloadFromButton(taskButton) {
+        const row = taskButton.closest("tr");
+        const sourceKey = row.dataset.key;
+        const taskIndex = Number(taskButton.dataset.taskIndex);
+        const text = taskItems(data[sourceKey])[taskIndex]?.text || taskButton.textContent.trim();
+        return { type: "task", sourceKey, taskIndex, text };
+      }
+
+      function getTouchPayload(target) {
+        const todoItem = target.closest("[data-todo-id]");
+        if (todoItem) return { payload: { type: "todo", id: todoItem.dataset.todoId }, source: todoItem, label: todoItem.textContent.trim() };
+        const taskButton = target.closest("[data-task-index]");
+        if (taskButton) return { payload: getTaskPayloadFromButton(taskButton), source: taskButton, label: taskButton.textContent.trim() };
+        return null;
+      }
+
+      function startTouchDrag(event) {
+        if (event.touches.length !== 1) return;
+        const dragData = getTouchPayload(event.target);
+        if (!dragData) return;
+        const touch = event.touches[0];
+        touchDrag.active = true;
+        touchDrag.payload = dragData.payload;
+        touchDrag.source = dragData.source;
+        touchDrag.startX = touch.clientX;
+        touchDrag.startY = touch.clientY;
+        touchDrag.moved = false;
+        touchDrag.source.classList.add("touch-dragging");
+        touchDrag.ghost = document.createElement("div");
+        touchDrag.ghost.className = "touch-drag-ghost";
+        touchDrag.ghost.textContent = dragData.label;
+        document.body.appendChild(touchDrag.ghost);
+        moveTouchGhost(touch.clientX, touch.clientY);
+      }
+
+      function moveTouchGhost(x, y) {
+        if (!touchDrag.ghost) return;
+        touchDrag.ghost.style.left = `${x}px`;
+        touchDrag.ghost.style.top = `${y}px`;
+      }
+
+      function findTouchDropDay(x, y) {
+        const hiddenGhost = touchDrag.ghost;
+        if (hiddenGhost) hiddenGhost.style.display = "none";
+        const element = document.elementFromPoint(x, y);
+        if (hiddenGhost) hiddenGhost.style.display = "";
+        return element?.closest?.(".calendar-day:not(.blank)") || null;
+      }
+
+      function moveTouchDrag(event) {
+        if (!touchDrag.active || event.touches.length !== 1) return;
+        const touch = event.touches[0];
+        const distance = Math.hypot(touch.clientX - touchDrag.startX, touch.clientY - touchDrag.startY);
+        if (distance > 8) touchDrag.moved = true;
+        if (!touchDrag.moved) return;
+        event.preventDefault();
+        moveTouchGhost(touch.clientX, touch.clientY);
+        const day = findTouchDropDay(touch.clientX, touch.clientY);
+        if (touchDrag.overDay && touchDrag.overDay !== day) touchDrag.overDay.classList.remove("drag-over");
+        touchDrag.overDay = day;
+        if (touchDrag.overDay) touchDrag.overDay.classList.add("drag-over");
+      }
+
+      function endTouchDrag(event) {
+        if (!touchDrag.active) return;
+        if (touchDrag.overDay) {
+          touchDrag.overDay.classList.remove("drag-over");
+          handleDropPayload(touchDrag.payload, touchDrag.overDay.dataset.date);
+        }
+        const wasMoved = touchDrag.moved;
+        if (touchDrag.source) touchDrag.source.classList.remove("touch-dragging");
+        if (touchDrag.ghost) touchDrag.ghost.remove();
+        touchDrag.active = false;
+        touchDrag.payload = null;
+        touchDrag.source = null;
+        touchDrag.ghost = null;
+        touchDrag.overDay = null;
+        touchDrag.moved = false;
+        if (wasMoved) {
+          touchDrag.suppressClick = true;
+          setTimeout(() => { touchDrag.suppressClick = false; }, 350);
+        }
+      }
+
+      function goToDate(key) {
+        activeMonth = Number(key.slice(5, 7));
+        renderTabs();
+        renderMonth();
+        requestAnimationFrame(() => {
+          const row = els.body.querySelector(`[data-key="${key}"]`);
+          if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
+          const day = els.calendar.querySelector(`[data-date="${key}"]`);
+          if (day) day.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      }
+
+      function goToToday() {
+        const key = todayKey();
+        if (!key || !data[key]) {
+          showNotice(`${selectedYear}년 날짜에서만 오늘 이동을 사용할 수 있습니다.`);
+          return;
+        }
+        goToDate(key);
+        showNotice(`${key}로 이동했습니다.`);
+      }
+
+      function switchYear(nextYear) {
+        selectedYear = nextYear;
+        storageKey = storageKeyForYear(selectedYear);
+        todoStorageKey = todoStorageKeyForYear(selectedYear);
+        activeMonth = CURRENT_YEAR === selectedYear ? new Date().getMonth() + 1 : 1;
+        data = loadData();
+        todos = loadTodos();
+        closeMonthModal();
+        initializeYearLabels();
+        renderTabs();
+        renderTodos();
+        renderCalendar();
+        renderMonth();
+        showNotice(`${selectedYear}년으로 이동했습니다.`);
+      }
+
+      function updateEntry(target) {
+        const row = target.closest("tr");
+        if (!row) return;
+        const key = row.dataset.key;
+        const field = target.dataset.field;
+        if (field === "tasks") {
+          data[key].tasks = mergeTasksFromText(target.value, data[key]);
+          refreshTaskChecklist(row, data[key]);
+          updateCalendarDay(key);
+        } else {
+          data[key][field] = target.value;
+        }
+        applySelectStyle(target);
+        save();
+        updateStats();
+        applyFilters();
+      }
+
+      function toggleTask(button) {
+        const row = button.closest("tr");
+        const key = row.dataset.key;
+        const entry = data[key];
+        const index = Number(button.dataset.taskIndex);
+        const items = taskItems(entry);
+        if (!items[index]) return;
+        items[index].completed = !items[index].completed;
+
+        const completed = items.filter(task => task.completed).length;
+        if (items.length && completed === items.length) entry.status = "완료";
+        else if (completed > 0) entry.status = "진행중";
+
+        const statusSelect = row.querySelector('[data-field="status"]');
+        statusSelect.value = entry.status;
+        applySelectStyle(statusSelect);
+        refreshTaskChecklist(row, entry);
+        updateCalendarDay(key);
+        save();
+        updateStats();
+        applyFilters();
+      }
+
+      function applySelectStyle(select) {
+        if (select.tagName !== "SELECT") return;
+        select.classList.remove("status-complete", "status-progress", "status-hold", "priority-high");
+        if (select.dataset.field === "status") {
+          if (select.value === "완료") select.classList.add("status-complete");
+          if (select.value === "진행중") select.classList.add("status-progress");
+          if (select.value === "보류") select.classList.add("status-hold");
+        }
+        if (select.dataset.field === "priority" && select.value === "높음") select.classList.add("priority-high");
+      }
+
+      function applySelectStyles() {
+        els.body.querySelectorAll("select").forEach(applySelectStyle);
+      }
+
+      function monthEntries() {
+        return Object.entries(data).filter(([key]) => Number(key.slice(5, 7)) === activeMonth);
+      }
+
+      function isWritten(entry) {
+        return entry.status !== "미작성" || fields.some(field => {
+          if (field === "status" || field === "priority") return false;
+          return String(entry[field] ?? "").trim() !== "";
+        });
+      }
+
+      function updateStats() {
+        const entries = monthEntries().map(([, entry]) => entry);
+        const written = entries.filter(isWritten).length;
+        const complete = entries.filter(entry => entry.status === "완료").length;
+        const hours = entries.reduce((sum, entry) => sum + (Number(entry.hours) || 0), 0);
+        els.writtenDays.innerHTML = `${written}<small>일</small>`;
+        els.completeDays.innerHTML = `${complete}<small>일</small>`;
+        els.writeRate.innerHTML = `${Math.round(written / entries.length * 100)}<small>%</small>`;
+        els.totalHours.innerHTML = `${hours.toLocaleString("ko-KR", { maximumFractionDigits: 1 })}<small>시간</small>`;
+        els.completeRate.innerHTML = `${written ? Math.round(complete / written * 100) : 0}<small>%</small>`;
+      }
+
+      function applyFilters() {
+        const query = els.search.value.trim().toLowerCase();
+        const status = els.statusFilter.value;
+        const dayType = els.dayFilter.value;
+        let visible = 0;
+        els.body.querySelectorAll("tr").forEach(row => {
+          const entry = data[row.dataset.key];
+          const haystack = fields.map(field => String(entry[field] ?? "")).join(" ").toLowerCase();
+          const matches = (!query || haystack.includes(query))
+            && (!status || entry.status === status)
+            && (!dayType || row.dataset.dayType === dayType);
+          row.classList.toggle("hidden", !matches);
+          if (matches) visible++;
+        });
+        els.empty.classList.toggle("show", visible === 0);
+      }
+
+      function download(filename, content, type, includeBom = true) {
+        const blob = new Blob(includeBom ? ["\ufeff", content] : [content], { type });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function csvCell(value) {
+        return `"${String(value ?? "").replaceAll('"', '""')}"`;
+      }
+
+      function exportCsv() {
+        const header = ["날짜", "요일", "핵심 목표", "주요 업무", "업무 체크", "업무 결과", "이슈/지원", "다음 업무", "상태", "근무시간", "우선순위", "만족도", "메모"];
+        const rows = monthEntries().map(([key, entry]) => {
+          const date = new Date(`${key}T00:00:00`);
+          const tasks = taskItems(entry);
+          const checklist = tasks.map(task => `${task.completed ? "완료" : "미완료"}: ${task.text}`).join(" / ");
+          return [key, weekdays[date.getDay()], entry.goal, tasksToText(entry), checklist, entry.result, entry.issue, entry.next, entry.status, entry.hours, entry.priority, entry.satisfaction, entry.memo];
+        });
+        download(`${selectedYear}_${activeMonth}월_업무일지.csv`, [header, ...rows].map(row => row.map(csvCell).join(",")).join("\r\n"), "text/csv;charset=utf-8");
+        showNotice(`${activeMonth}월 업무일지를 내보냈습니다.`);
+      }
+
+      function backupJson() {
+        download(`${selectedYear}_업무일지_백업.json`, JSON.stringify({ version: 2, year: selectedYear, data }, null, 2), "application/json");
+        showNotice("전체 업무일지 백업 파일을 저장했습니다.");
+      }
+
+      function restoreJson(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const parsed = JSON.parse(reader.result);
+            const restored = parsed.data || parsed;
+            const initial = createInitialData();
+            Object.keys(initial).forEach(key => initial[key] = migrateEntry(initial[key], restored[key] || {}));
+            data = initial;
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            renderMonth();
+            showNotice("백업 내용을 불러왔습니다.");
+          } catch (_) {
+            showNotice("올바른 백업 파일이 아닙니다.");
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      function showNotice(message, options = {}) {
+        if (noticeTimer) {
+          clearTimeout(noticeTimer);
+          noticeTimer = null;
+        }
+        els.notice.textContent = message;
+        els.notice.classList.add("show");
+        if (options.sticky) return;
+        noticeTimer = setTimeout(() => {
+          els.notice.classList.remove("show");
+          noticeTimer = null;
+        }, options.duration || 2200);
+      }
+
+      els.tabs.addEventListener("click", event => {
+        const button = event.target.closest("[data-month]");
+        if (!button) return;
+        activeMonth = Number(button.dataset.month);
+        renderTabs();
+        renderMonth();
+      });
+      els.body.addEventListener("input", event => {
+        if (event.target.dataset.field) updateEntry(event.target);
+      });
+      els.body.addEventListener("change", event => {
+        if (event.target.dataset.field) updateEntry(event.target);
+      });
+      els.body.addEventListener("click", event => {
+        if (touchDrag.suppressClick) {
+          event.preventDefault();
+          return;
+        }
+        const taskButton = event.target.closest("[data-task-index]");
+        if (taskButton) toggleTask(taskButton);
+      });
+      els.addTodo.addEventListener("click", addTodo);
+      els.todoInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") addTodo();
+      });
+      els.todoList.addEventListener("click", event => {
+        const removeButton = event.target.closest("[data-remove-todo]");
+        if (removeButton) removeTodo(removeButton.dataset.removeTodo);
+      });
+      els.todoList.addEventListener("dragstart", event => {
+        const item = event.target.closest("[data-todo-id]");
+        if (!item) return;
+        event.dataTransfer.setData("text/plain", item.dataset.todoId);
+        event.dataTransfer.setData("application/json", JSON.stringify({ type: "todo", id: item.dataset.todoId }));
+        event.dataTransfer.effectAllowed = "move";
+      });
+      els.body.addEventListener("dragstart", event => {
+        const taskButton = event.target.closest("[data-task-index]");
+        if (!taskButton) return;
+        const payload = getTaskPayloadFromButton(taskButton);
+        event.dataTransfer.setData("application/json", JSON.stringify(payload));
+        event.dataTransfer.setData("text/plain", payload.text);
+        event.dataTransfer.effectAllowed = "move";
+      });
+      document.addEventListener("touchstart", startTouchDrag, { passive: true });
+      document.addEventListener("touchmove", moveTouchDrag, { passive: false });
+      document.addEventListener("touchend", endTouchDrag);
+      document.addEventListener("touchcancel", endTouchDrag);
+      els.calendar.addEventListener("dragover", event => {
+        const day = event.target.closest(".calendar-day:not(.blank)");
+        if (!day) return;
+        event.preventDefault();
+        day.classList.add("drag-over");
+        event.dataTransfer.dropEffect = "move";
+      });
+      els.calendar.addEventListener("dragleave", event => {
+        const day = event.target.closest(".calendar-day");
+        if (day) day.classList.remove("drag-over");
+      });
+      els.calendar.addEventListener("drop", event => {
+        const day = event.target.closest(".calendar-day:not(.blank)");
+        if (!day) return;
+        event.preventDefault();
+        day.classList.remove("drag-over");
+        handleDropPayload(parseDropPayload(event.dataTransfer), day.dataset.date);
+      });
+      els.calendar.addEventListener("click", event => {
+        const title = event.target.closest("[data-calendar-month]");
+        if (title) {
+          openMonthModal(Number(title.dataset.calendarMonth));
+          return;
+        }
+      });
+      els.calendar.addEventListener("click", event => {
+        const day = event.target.closest(".calendar-day:not(.blank)");
+        if (day) goToDate(day.dataset.date);
+      });
+      els.monthModalCalendar.addEventListener("dragover", event => {
+        const day = event.target.closest(".calendar-day:not(.blank)");
+        if (!day) return;
+        event.preventDefault();
+        day.classList.add("drag-over");
+        event.dataTransfer.dropEffect = "move";
+      });
+      els.monthModalCalendar.addEventListener("dragleave", event => {
+        const day = event.target.closest(".calendar-day");
+        if (day) day.classList.remove("drag-over");
+      });
+      els.monthModalCalendar.addEventListener("drop", event => {
+        const day = event.target.closest(".calendar-day:not(.blank)");
+        if (!day) return;
+        event.preventDefault();
+        day.classList.remove("drag-over");
+        handleDropPayload(parseDropPayload(event.dataTransfer), day.dataset.date);
+      });
+      els.monthModalCalendar.addEventListener("click", event => {
+        const day = event.target.closest(".calendar-day:not(.blank)");
+        if (day) goToDate(day.dataset.date);
+      });
+      els.closeMonthModal.addEventListener("click", closeMonthModal);
+      els.monthModal.addEventListener("click", event => {
+        if (event.target === els.monthModal) closeMonthModal();
+      });
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape") closeAllModals();
+      });
+      els.prevYearButton.addEventListener("click", () => switchYear(selectedYear - 1));
+      els.nextYearButton.addEventListener("click", () => switchYear(selectedYear + 1));
+      els.todayButton.addEventListener("click", goToToday);
+      els.search.addEventListener("input", applyFilters);
+      els.statusFilter.addEventListener("change", applyFilters);
+      els.dayFilter.addEventListener("change", applyFilters);
+      document.querySelector("#exportCsv").addEventListener("click", exportCsv);
+      document.querySelector("#backupJson").addEventListener("click", backupJson);
+      document.querySelector("#restoreJson").addEventListener("change", event => restoreJson(event.target.files[0]));
+      document.querySelector("#printPage").addEventListener("click", () => window.print());
+
+      initializeYearLabels();
+      renderTabs();
+      renderTodos();
+      renderCalendar();
+      renderMonth();
+    })();
+  </script>
+</body>
+</html>
