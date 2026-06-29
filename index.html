@@ -21,6 +21,8 @@
       --amber-bg: #fff0d8;
       --red: #b84a4a;
       --red-bg: #f8dede;
+      --holiday: #c70202;
+      --holiday-bg: #fff0f0;
       --shadow: 0 12px 36px rgba(28, 52, 72, .09);
     }
 
@@ -316,6 +318,7 @@
     .calendar-day:nth-child(7n) { border-right: 0; }
     .calendar-day.blank { background: #f7fafc; cursor: default; }
     .calendar-day.weekend { background: var(--weekend); }
+    .calendar-day.holiday { background: var(--holiday-bg); }
     .calendar-day.drag-over { outline: 3px solid rgba(47, 107, 154, .35); outline-offset: -3px; }
     .calendar-day.today {
       box-shadow: inset 0 0 0 3px rgba(184, 74, 74, .45);
@@ -349,6 +352,15 @@
       color: var(--muted);
       font-size: 10px;
       line-height: 1.35;
+    }
+
+    .holiday-label {
+      display: block;
+      margin-top: 3px;
+      color: var(--holiday);
+      font-size: 10px;
+      font-weight: 900;
+      line-height: 1.25;
     }
 
     .stats {
@@ -437,6 +449,7 @@
     }
 
     tr.weekend td { background: var(--weekend); }
+    tr.holiday td { background: var(--holiday-bg); }
     tr.hidden { display: none; }
 
     .date-cell {
@@ -450,6 +463,19 @@
 
     .sunday .date-cell { color: var(--red); }
     .saturday .date-cell { color: var(--blue); }
+    .holiday .date-cell { color: var(--holiday); }
+
+    .date-main { font-weight: 900; }
+
+    .date-holiday {
+      display: block;
+      margin-top: 5px;
+      color: var(--holiday);
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.25;
+      white-space: normal;
+    }
 
     td textarea, td input, td select {
       width: 100%;
@@ -879,6 +905,43 @@
       const fields = ["goal", "tasks", "result", "issue", "next", "status", "hours", "priority", "satisfaction", "memo"];
       const textFields = new Set(["goal", "tasks", "result", "issue", "next", "memo"]);
       const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+      const fixedKoreaHolidays = [
+        { month: 1, day: 1, name: "신정", substitute: false },
+        { month: 3, day: 1, name: "삼일절", substitute: true },
+        { month: 5, day: 5, name: "어린이날", substitute: true },
+        { month: 6, day: 6, name: "현충일", substitute: false },
+        { month: 8, day: 15, name: "광복절", substitute: true },
+        { month: 10, day: 3, name: "개천절", substitute: true },
+        { month: 10, day: 9, name: "한글날", substitute: true },
+        { month: 12, day: 25, name: "성탄절", substitute: true }
+      ];
+      const lunarKoreaHolidays = {
+        2026: { seollal: "2026-02-17", buddha: "2026-05-24", chuseok: "2026-09-25" },
+        2027: { seollal: "2027-02-07", buddha: "2027-05-13", chuseok: "2027-09-15" },
+        2028: { seollal: "2028-01-27", buddha: "2028-05-02", chuseok: "2028-10-03" },
+        2029: { seollal: "2029-02-13", buddha: "2029-05-20", chuseok: "2029-09-22" },
+        2030: { seollal: "2030-02-03", buddha: "2030-05-09", chuseok: "2030-09-12" },
+        2031: { seollal: "2031-01-23", buddha: "2031-05-28", chuseok: "2031-10-01" },
+        2032: { seollal: "2032-02-11", buddha: "2032-05-16", chuseok: "2032-09-19" },
+        2033: { seollal: "2033-01-31", buddha: "2033-05-06", chuseok: "2033-09-08" },
+        2034: { seollal: "2034-02-19", buddha: "2034-05-25", chuseok: "2034-09-27" },
+        2035: { seollal: "2035-02-08", buddha: "2035-05-15", chuseok: "2035-09-16" },
+        2036: { seollal: "2036-01-28", buddha: "2036-05-03", chuseok: "2036-10-04" },
+        2037: { seollal: "2037-02-15", buddha: "2037-05-22", chuseok: "2037-09-24" },
+        2038: { seollal: "2038-02-04", buddha: "2038-05-11", chuseok: "2038-09-13" },
+        2039: { seollal: "2039-01-24", buddha: "2039-04-30", chuseok: "2039-10-02" },
+        2040: { seollal: "2040-02-12", buddha: "2040-05-18", chuseok: "2040-09-21" },
+        2041: { seollal: "2041-02-01", buddha: "2041-05-07", chuseok: "2041-09-10" },
+        2042: { seollal: "2042-01-22", buddha: "2042-05-26", chuseok: "2042-09-29" },
+        2043: { seollal: "2043-02-10", buddha: "2043-05-16", chuseok: "2043-09-17" },
+        2044: { seollal: "2044-01-30", buddha: "2044-05-04", chuseok: "2044-10-05" },
+        2045: { seollal: "2045-02-17", buddha: "2045-05-24", chuseok: "2045-09-25" },
+        2046: { seollal: "2046-02-06", buddha: "2046-05-13", chuseok: "2046-09-15" },
+        2047: { seollal: "2047-01-26", buddha: "2047-05-02", chuseok: "2047-10-04" },
+        2048: { seollal: "2048-02-14", buddha: "2048-05-20", chuseok: "2048-09-22" },
+        2049: { seollal: "2049-02-02", buddha: "2049-05-09", chuseok: "2049-09-11" },
+        2050: { seollal: "2050-01-23", buddha: "2050-05-28", chuseok: "2050-09-30" }
+      };
 
       const els = {
         tabs: document.querySelector("#monthTabs"),
@@ -1000,6 +1063,83 @@
         return `${selectedYear}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       }
 
+      function formatDateKey(date) {
+        return [
+          date.getFullYear(),
+          String(date.getMonth() + 1).padStart(2, "0"),
+          String(date.getDate()).padStart(2, "0")
+        ].join("-");
+      }
+
+      function parseDateKey(key) {
+        const [year, month, day] = key.split("-").map(Number);
+        return new Date(year, month - 1, day);
+      }
+
+      function addDays(key, amount) {
+        const date = parseDateKey(key);
+        date.setDate(date.getDate() + amount);
+        return formatDateKey(date);
+      }
+
+      function isWeekendKey(key) {
+        const day = parseDateKey(key).getDay();
+        return day === 0 || day === 6;
+      }
+
+      function addHoliday(holidays, key, name) {
+        if (!holidays[key]) holidays[key] = [];
+        if (!holidays[key].includes(name)) holidays[key].push(name);
+      }
+
+      function koreaHolidaysForYear(year) {
+        const holidays = {};
+        const baseHolidays = [];
+        fixedKoreaHolidays.forEach(holiday => {
+          const key = `${year}-${String(holiday.month).padStart(2, "0")}-${String(holiday.day).padStart(2, "0")}`;
+          addHoliday(holidays, key, holiday.name);
+          baseHolidays.push({ key, name: holiday.name, substitute: holiday.substitute });
+        });
+
+        const lunar = lunarKoreaHolidays[year];
+        if (lunar) {
+          [
+            { key: addDays(lunar.seollal, -1), name: "설날 연휴", substitute: true },
+            { key: lunar.seollal, name: "설날", substitute: true },
+            { key: addDays(lunar.seollal, 1), name: "설날 연휴", substitute: true },
+            { key: lunar.buddha, name: "부처님오신날", substitute: true },
+            { key: addDays(lunar.chuseok, -1), name: "추석 연휴", substitute: true },
+            { key: lunar.chuseok, name: "추석", substitute: true },
+            { key: addDays(lunar.chuseok, 1), name: "추석 연휴", substitute: true }
+          ].forEach(holiday => {
+            addHoliday(holidays, holiday.key, holiday.name);
+            baseHolidays.push(holiday);
+          });
+        }
+
+        baseHolidays.forEach(holiday => {
+          if (!holiday.substitute) return;
+          const overlaps = isWeekendKey(holiday.key) || holidays[holiday.key]?.length > 1;
+          if (!overlaps) return;
+          let substituteKey = addDays(holiday.key, 1);
+          while (isWeekendKey(substituteKey) || holidays[substituteKey]?.length) {
+            substituteKey = addDays(substituteKey, 1);
+          }
+          addHoliday(holidays, substituteKey, `${holiday.name} 대체공휴일`);
+        });
+
+        return holidays;
+      }
+
+      function holidayInfo(key) {
+        const names = koreaHolidaysForYear(Number(key.slice(0, 4)))[key] || [];
+        return {
+          names,
+          label: names.join(" · "),
+          isHoliday: names.length > 0
+        };
+      }
+
       function initializeYearLabels() {
         document.title = `${selectedYear} 월별 업무일지`;
         if (els.yearLabel) els.yearLabel.textContent = `${selectedYear}`;
@@ -1033,11 +1173,13 @@
         const entry = data[key];
         const date = new Date(selectedYear, month - 1, day);
         const dayIndex = date.getDay();
+        const holiday = holidayInfo(key);
         const weekendClass = dayIndex === 0 ? "weekend sunday" : dayIndex === 6 ? "weekend saturday" : "";
+        const holidayClass = holiday.isHoliday ? "holiday" : "";
         return `
-          <tr class="${weekendClass}" data-key="${key}" data-day-type="${dayIndex === 0 || dayIndex === 6 ? "weekend" : "weekday"}">
-            <td class="date-cell">${key}</td>
-            <td class="date-cell">${weekdays[dayIndex]}</td>
+          <tr class="${weekendClass} ${holidayClass}" data-key="${key}" data-day-type="${dayIndex === 0 || dayIndex === 6 ? "weekend" : "weekday"}">
+            <td class="date-cell"><span class="date-main">${key}</span>${holiday.isHoliday ? `<span class="date-holiday">${escapeHtml(holiday.label)}</span>` : ""}</td>
+            <td class="date-cell">${weekdays[dayIndex]}${holiday.isHoliday ? `<span class="date-holiday">공휴일</span>` : ""}</td>
             <td><textarea data-field="goal" aria-label="${key} goal">${escapeHtml(entry.goal)}</textarea></td>
             <td class="task-cell">
               <textarea data-field="tasks" aria-label="${key} tasks" placeholder="업무를 줄바꿈으로 입력하세요">${escapeHtml(tasksToText(entry))}</textarea>
@@ -1237,11 +1379,14 @@
         const entry = data[key];
         const items = taskItems(entry);
         const preview = items.slice(0, 2).map(task => `<div>${escapeHtml(task.text)}</div>`).join("");
+        const holiday = holidayInfo(key);
         const weekend = date.getDay() === 0 || date.getDay() === 6 ? "weekend" : "";
+        const holidayClass = holiday.isHoliday ? "holiday" : "";
         const todayClass = key === todayKey() ? "today" : "";
         return `
-          <div class="calendar-day ${weekend} ${todayClass}" data-date="${key}" title="${key}">
+          <div class="calendar-day ${weekend} ${holidayClass} ${todayClass}" data-date="${key}" title="${holiday.isHoliday ? `${key} · ${escapeHtml(holiday.label)}` : key}">
             <div class="day-number"><span>${day}</span>${items.length ? `<span class="task-badge">${items.length}</span>` : ""}</div>
+            ${holiday.isHoliday ? `<span class="holiday-label">${escapeHtml(holiday.label)}</span>` : ""}
             <div class="day-tasks">${preview}</div>
           </div>
         `;
