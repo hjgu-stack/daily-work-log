@@ -1664,6 +1664,7 @@
       function isWritten(entry) {
         return entry.status !== "미작성" || fields.some(field => {
           if (field === "status" || field === "priority") return false;
+          if (field === "tasks") return tasksToText(entry).trim() !== "";
           return String(entry[field] ?? "").trim() !== "";
         });
       }
@@ -1680,6 +1681,26 @@
         els.completeRate.innerHTML = `${written ? Math.round(complete / written * 100) : 0}<small>%</small>`;
       }
 
+      function searchHaystack(key, entry) {
+        const date = parseDateKey(key);
+        const holiday = holidayInfo(key).label;
+        return [
+          key,
+          weekdays[date.getDay()],
+          holiday,
+          entry.goal,
+          tasksToText(entry),
+          entry.result,
+          entry.issue,
+          entry.next,
+          entry.status,
+          entry.hours,
+          entry.priority,
+          entry.satisfaction,
+          entry.memo
+        ].map(value => String(value ?? "")).join(" ").toLowerCase();
+      }
+
       function applyFilters() {
         const query = els.search.value.trim().toLowerCase();
         const status = els.statusFilter.value;
@@ -1687,7 +1708,7 @@
         let visible = 0;
         els.body.querySelectorAll("tr").forEach(row => {
           const entry = data[row.dataset.key];
-          const haystack = fields.map(field => String(entry[field] ?? "")).join(" ").toLowerCase();
+          const haystack = searchHaystack(row.dataset.key, entry);
           const matches = (!query || haystack.includes(query))
             && (!status || entry.status === status)
             && (!dayType || row.dataset.dayType === dayType);
