@@ -1701,15 +1701,23 @@
         ].map(value => String(value ?? "")).join(" ").toLowerCase();
       }
 
+      function searchTerms(value) {
+        return String(value || "")
+          .toLowerCase()
+          .split(/[\s,，、;；|/]+/)
+          .map(term => term.trim())
+          .filter(Boolean);
+      }
+
       function applyFilters() {
-        const query = els.search.value.trim().toLowerCase();
+        const terms = searchTerms(els.search.value);
         const status = els.statusFilter.value;
         const dayType = els.dayFilter.value;
         let visible = 0;
         els.body.querySelectorAll("tr").forEach(row => {
           const entry = data[row.dataset.key];
           const haystack = searchHaystack(row.dataset.key, entry);
-          const matches = (!query || haystack.includes(query))
+          const matches = (!terms.length || terms.some(term => haystack.includes(term)))
             && (!status || entry.status === status)
             && (!dayType || row.dataset.dayType === dayType);
           row.classList.toggle("hidden", !matches);
